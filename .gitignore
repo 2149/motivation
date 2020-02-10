@@ -18,7 +18,7 @@ P-HOT/build
 
 pmdk
 
-tmp_push.sh
+#tmp_push.sh
 
 *tags
 *cscope.out
