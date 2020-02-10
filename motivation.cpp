@@ -722,8 +722,8 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
                 for (uint64_t i = scope.begin(); i != scope.end(); i++) {
                     uint64_t key_64 = rnd_get.Next();
                     uint64_t *ret = reinterpret_cast<uint64_t *> (tree->get(key_64));
-                    if (*ret != key_64) {
-                        printf("[MASS] search key = %lu, search value = %lu\n", key_64, *ret);
+                    if ((uint64_t)ret != key_64) {
+                        printf("[MASS] search key = %lu, search value = %lu\n", key_64, (uint64_t)ret);
                         exit(1);
                     }
                 }

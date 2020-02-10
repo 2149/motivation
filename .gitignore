@@ -18,6 +18,8 @@ P-HOT/build
 
 pmdk
 
+tmp_push.sh
+
 *tags
 *cscope.out
 *cscope.files
