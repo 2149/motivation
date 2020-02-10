@@ -11,13 +11,13 @@
 
 using namespace std;
 
-#include "P-ART/Tree.h"
-#include "third-party/FAST_FAIR/btree.h"
-#include "third-party/CCEH/src/Level_hashing.h"
-#include "third-party/CCEH/src/CCEH.h"
-#include "third-party/WOART/woart.h"
+#include "../P-ART/Tree.h"
+#include "../third-party/FAST_FAIR/btree.h"
+#include "../third-party/CCEH/src/Level_hashing.h"
+#include "../third-party/CCEH/src/CCEH.h"
+#include "../third-party/WOART/woart.h"
+#include "../P-BwTree/src/bwtree.h"
 #include "masstree.h"
-#include "P-BwTree/src/bwtree.h"
 #include "clht.h"
 #include "ssmem.h"
 
@@ -875,7 +875,7 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
                 barrier_cross(&barrier);
 
                 for (uint64_t i = start_key; i < end_key; i++) {
-                    uint64_t key_64 = rnd_insert.Next();
+                    uint64_t key_64 = rnd_get.Next();
                     uintptr_t val = clht_get(tds[thread_id].ht->ht, key_64);
                     if (val != key_64) {
                         std::cout << "[CLHT] wrong key read: " << val << "expected: " << key_64 << std::endl;
