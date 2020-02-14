@@ -454,9 +454,9 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
                 for (uint64_t i = scope.begin(); i != scope.end(); i++) {
                     uint64_t key_64 = rnd_scan.Next();
                     uintptr_t buf[scan_count];
-                    auto it = lower_bound(key);
+                    auto it = mTrie.lower_bound(key);
                     int resultsFound = 0;
-                    while (it != mTrie.end() && resultsFound  scan_count) {
+                    while (it != mTrie.end() && resultsFound < scan_count) {
                         buf[resultsFound] = (*it)->value;
                         resultsFound++;
                         it++;
