@@ -448,12 +448,21 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
             int count = 4;
             int scan_times = 100;
             int scan_count = 100;
-            while(count >0 ) {
+            while(count > 0) {
             auto starttime = std::chrono::system_clock::now();
             tbb::parallel_for(tbb::blocked_range<uint64_t>(0, scan_times), [&](const tbb::blocked_range<uint64_t> &scope) {
                 for (uint64_t i = scope.begin(); i != scope.end(); i++) {
                     uint64_t key_64 = rnd_scan.Next();
-                    idx::contenthelpers::OptionalValue<IntKeyVal *> result = mTrie.scan(key_64, scan_count);
+                    uintptr_t buf[scan_count];
+                    auto it = lower_bound(key);
+                    int resultsFound = 0;
+                    while (it != mTrie.end() && resultsFound  scan_count) {
+                        buf[resultsFound] = (*it)->value;
+                        resultsFound++;
+                        it++;
+                    }
+                    printf("Found %d, while scan %d\n", resultsFound, scan_count);
+                    // idx::contenthelpers::OptionalValue<IntKeyVal *> result = mTrie.scan(key_64, scan_count);
                 }
             });
             auto duration = std::chrono::duration_cast<std::chrono::microseconds>(
@@ -612,7 +621,7 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
 
                 t->AssignGCID(thread_id);
                 for (uint64_t i = start_key; i < end_key; i++) {
-                    uint64_t buf[200];
+                    uint64_t buf[scan_count];
                     uint64_t key_64 = rnd_scan.Next();
                     auto it = t->Begin(key_64);
 
