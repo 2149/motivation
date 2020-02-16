@@ -454,12 +454,12 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
                 for (uint64_t i = scope.begin(); i != scope.end(); i++) {
                     uint64_t key_64 = rnd_scan.Next();
                     uintptr_t buf[scan_count];
-                    auto it = mTrie.lower_bound(key_64);
+                    hot::rowex::HOTRowexSynchronizedIterator<IntKeyVal *, IntKeyExtractor> it = mTrie.lower_bound(key_64);
                     int resultsFound = 0;
                     while (it != mTrie.end() && resultsFound < scan_count) {
                         buf[resultsFound] = (*it)->value;
                         resultsFound++;
-                        it++;
+                        ++it;
                     }
                     printf("Found %d, while scan %d\n", resultsFound, scan_count);
                     // idx::contenthelpers::OptionalValue<IntKeyVal *> result = mTrie.scan(key_64, scan_count);
@@ -904,6 +904,7 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
                     std::chrono::system_clock::now() - starttime);
             printf("Get_Throughput: run, %f ,ops/s\n", (RUN_SIZE * 1.0) / duration.count() * 1000000);
         }
+        
         barrier.crossing = 0;
         {
             // Delete
