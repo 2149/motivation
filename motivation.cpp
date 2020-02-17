@@ -258,7 +258,7 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
     rocksdb::Random64 *rnd_insert[num_thread];
     rocksdb::Random64 *rnd_get[num_thread];
     rocksdb::Random64 *rnd_scan[num_thread];
-    rocksdb::Random64 *rnd_delete[num_threadn];
+    rocksdb::Random64 *rnd_delete[num_thread];
 
     std::atomic<int> range_complete, range_incomplete;
     range_complete.store(0);
@@ -304,7 +304,7 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
             // Put
             Key *end = end->make_leaf(UINT64_MAX, sizeof(uint64_t), 0);
             next_thread_id.store(0);
-            next_thread_id.store(0);std::chrono::system_clock::now();
+            auto starttime = std::chrono::system_clock::now();
             tbb::parallel_for(tbb::blocked_range<uint64_t>(0, RUN_SIZE), [&](const tbb::blocked_range<uint64_t> &scope) {
                 auto t = tree.getThreadInfo();
                 int thread_id = next_thread_id.fetch_add(1);
@@ -322,7 +322,8 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
         {
             // Get
             Key *end = end->make_leaf(UINT64_MAX, sizeof(uint64_t), 0);
-            next_thread_id.store(0);std::chrono::system_clock::now();
+            next_thread_id.store(0);
+            auto starttime = std::chrono::system_clock::now();
             tbb::parallel_for(tbb::blocked_range<uint64_t>(0, RUN_SIZE), [&](const tbb::blocked_range<uint64_t> &scope) {
                 int thread_id = next_thread_id.fetch_add(1);
                 auto t = tree.getThreadInfo();
