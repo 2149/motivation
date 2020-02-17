@@ -271,10 +271,7 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
                     stats.end();
                     stats.add_put();
                     if ((i % 1000) == 0) {
-                        // nvm_printstatics(storage_type);
-                        cout<<"Put_test:"<<i;
-                        stats.print_latency();
-                        stats.clear_period();
+                        stats.PrintLatency(i);
                     }
                 }
             });
@@ -388,10 +385,7 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
                     stats.end();
                     stats.add_put();
                     if ((i % 1000) == 0) {
-                        // nvm_printstatics(storage_type);
-                        cout<<"Put_test:"<<i;
-                        stats.print_latency();
-                        stats.clear_period();
+                        stats.PrintLatency(i);
                     }
                 }
             });
@@ -514,10 +508,7 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
                     stats.end();
                     stats.add_put();
                     if ((i % 1000) == 0) {
-                        // nvm_printstatics(storage_type);
-                        cout<<"Put_test:"<<i;
-                        stats.print_latency();
-                        stats.clear_period();
+                        stats.PrintLatency(i);
                     }
                 }
                 t->UnregisterThread(thread_id);
@@ -698,10 +689,7 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
                     stats.end();
                     stats.add_put();
                     if ((i % 1000) == 0) {
-                        // nvm_printstatics(storage_type);
-                        cout<<"Put_test:"<<i;
-                        stats.print_latency();
-                        stats.clear_period();
+                        stats.PrintLatency(i);
                     }
                 }
             });
@@ -813,10 +801,7 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
                     stats.end();
                     stats.add_put();
                     if ((i % 1000) == 0) {
-                        // nvm_printstatics(storage_type);
-                        cout<<"Put_test:"<<i;
-                        stats.print_latency();
-                        stats.clear_period();
+                        stats.PrintLatency(i);
                     }
                 }
             };
@@ -904,7 +889,7 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
                     std::chrono::system_clock::now() - starttime);
             printf("Get_Throughput: run, %f ,ops/s\n", (RUN_SIZE * 1.0) / duration.count() * 1000000);
         }
-        
+
         barrier.crossing = 0;
         {
             // Delete

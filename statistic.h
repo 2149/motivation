@@ -186,7 +186,21 @@ public:
         <<" average_scan_latency(us) "<<scan_ * 1e-3/ function_count
         <<"\n";
     }
+    const static char *prefixs[] = {"PutTest", "GetTest", "DeleteTest", "ScanTest"};
+    enum {
+        PutPrefix = 0,
+        GetPrefix,
+        DelPrefix,
+        ScanPrefix,
 
+    };
+    void PrintLatency(uint64_t i, int Prefix = PutPrefix) {
+#ifdef PRINT_STAT
+        cout << prefixs[Prefix] << ":" << i;
+        print_latency();
+        clear_period();
+#endif
+    }
 private:
     double read_;
     double write_;
