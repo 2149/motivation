@@ -195,11 +195,9 @@ public:
         <<"\n";
     }
     void PrintLatency(uint64_t i, int Prefix = PutPrefix) {
-#ifdef PRINT_STAT
         cout << prefixs[Prefix] << ":" << i;
         print_latency();
         clear_period();
-#endif
     }
 private:
     double read_;
