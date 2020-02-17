@@ -561,7 +561,7 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
                 int thread_id = next_thread_id.fetch_add(1);
                 uint64_t start_key = scan_times / num_thread * (uint64_t)thread_id;
                 uint64_t end_key = start_key + scan_times / num_thread;
-                for (uint64_t i = start_key; i != end_key; i++) { {
+                for (uint64_t i = start_key; i != end_key; i++) {
                     uint64_t key_64 = rnd_scan[thread_id]->Next();
                     uintptr_t buf[scan_count];
                     hot::rowex::HOTRowexSynchronizedIterator<IntKeyVal *, IntKeyExtractor> it = mTrie.lower_bound(key_64);
@@ -574,6 +574,7 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
                     printf("Found %d, while scan %d\n", resultsFound, scan_count);
                     // idx::contenthelpers::OptionalValue<IntKeyVal *> result = mTrie.scan(key_64, scan_count);
                 }
+
             };
             std::vector<std::thread> thread_group;
 
