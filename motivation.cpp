@@ -286,7 +286,7 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
                 uint64_t end_key = start_key + LOAD_SIZE / num_thread;
                 auto t = tree.getThreadInfo();
 
-                printf("Thread id = %d, start %lld, end %lld.\n", thread_id, start_key, end_key);
+                // printf("Thread id = %d, start %lld, end %lld.\n", thread_id, start_key, end_key);
                 for (uint64_t i = start_key; i != end_key; i++) {
                     uint64_t key_64 = rnd_insert[thread_id]->Next();
                     Key *key = key->make_leaf(key_64, sizeof(uint64_t), key_64);
