@@ -234,6 +234,14 @@ void loadKey(TID tid, Key &key) {
     return ;
 }
 
+#define MAX_THREAD 128
+static int rand_seed[MAX_THREAD];
+
+static int SetRandSeed(void) {
+    for(int i =0; i < MAX_THREAD; i ++) {
+        rand_seed[i] = 0xdeadbeef * (i + 1);
+    }
+}
 
 void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thread,
         std::vector<uint64_t> &init_keys,
@@ -246,25 +254,37 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
     int range;
     Statistic stats;
 
-    rocksdb::Random64 rnd_insert(0xdeadbeef);
-    rocksdb::Random64 rnd_get(0xdeadbeef);
-    rocksdb::Random64 rnd_scan(0xdeadbeef);
-    rocksdb::Random64 rnd_delete(0xdeadbeef);
+
+    rocksdb::Random64 *rnd_insert[num_thread];
+    rocksdb::Random64 *rnd_get[num_thread];
+    rocksdb::Random64 *rnd_scan[num_thread];
+    rocksdb::Random64 *rnd_delete[num_threadn];
 
     std::atomic<int> range_complete, range_incomplete;
     range_complete.store(0);
     range_incomplete.store(0);
 
+    {
+        for(int i = 0; i < num_thread; i ++) {
+            rnd_insert[i] = new rocksdb::Random64(0xdeadbeef * (i + 1)); 
+            rnd_get[i] = new rocksdb::Random64(0xdeadbeef * (i + 1)); 
+            rnd_scan[i] = new rocksdb::Random64(0xdeadbeef * (i + 1)); 
+            rnd_delete[i] = new rocksdb::Random64(0xdeadbeef * (i + 1)); 
+        }
+    }
+    std::atomic<int> next_thread_id;
     if (index_type == TYPE_ART) {
         printf("Motivation test ART start!\n");
         ART_ROWEX::Tree tree(loadKey);
         {
             // Load
+            next_thread_id.store(0);
             auto starttime = std::chrono::system_clock::now();
             tbb::parallel_for(tbb::blocked_range<uint64_t>(0, LOAD_SIZE), [&](const tbb::blocked_range<uint64_t> &scope) {
                 auto t = tree.getThreadInfo();
+                int thread_id = next_thread_id.fetch_add(1);
                 for (uint64_t i = scope.begin(); i != scope.end(); i++) {
-                    uint64_t key_64 = rnd_insert.Next();
+                    uint64_t key_64 = rnd_insert[thread_id]->Next();
                     stats.start();
                     Key *key = key->make_leaf(key_64, sizeof(uint64_t), key_64);
                     tree.insert(key, t);
@@ -283,11 +303,13 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
         {
             // Put
             Key *end = end->make_leaf(UINT64_MAX, sizeof(uint64_t), 0);
-            auto starttime = std::chrono::system_clock::now();
+            next_thread_id.store(0);
+            next_thread_id.store(0);std::chrono::system_clock::now();
             tbb::parallel_for(tbb::blocked_range<uint64_t>(0, RUN_SIZE), [&](const tbb::blocked_range<uint64_t> &scope) {
                 auto t = tree.getThreadInfo();
+                int thread_id = next_thread_id.fetch_add(1);
                 for (uint64_t i = scope.begin(); i != scope.end(); i++) {
-                    uint64_t key_64 = rnd_insert.Next();
+                    uint64_t key_64 = rnd_insert[thread_id]->Next();
                     Key *key = key->make_leaf(key_64, sizeof(uint64_t), key_64);
                     tree.insert(key, t);
                 }
@@ -300,11 +322,12 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
         {
             // Get
             Key *end = end->make_leaf(UINT64_MAX, sizeof(uint64_t), 0);
-            auto starttime = std::chrono::system_clock::now();
+            next_thread_id.store(0);std::chrono::system_clock::now();
             tbb::parallel_for(tbb::blocked_range<uint64_t>(0, RUN_SIZE), [&](const tbb::blocked_range<uint64_t> &scope) {
+                int thread_id = next_thread_id.fetch_add(1);
                 auto t = tree.getThreadInfo();
                 for (uint64_t i = scope.begin(); i != scope.end(); i++) {
-                    uint64_t key_64 = rnd_get.Next();
+                    uint64_t key_64 = rnd_get[thread_id]->Next();
                     Key *key = key->make_leaf(key_64, sizeof(uint64_t), 0);
                     uint64_t *val = reinterpret_cast<uint64_t *>(tree.lookup(key, t));
                     if (*val != key_64) {
@@ -325,11 +348,13 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
             int scan_times = 100;
             int scan_count = 100;
             while(count >0 ) {
+            next_thread_id.store(0);
             auto starttime = std::chrono::system_clock::now();
             tbb::parallel_for(tbb::blocked_range<uint64_t>(0, scan_times), [&](const tbb::blocked_range<uint64_t> &scope) {
                 auto t = tree.getThreadInfo();
+                int thread_id = next_thread_id.fetch_add(1);
                 for (uint64_t i = scope.begin(); i != scope.end(); i++) {
-                    uint64_t key_64 = rnd_scan.Next();
+                    uint64_t key_64 = rnd_scan[thread_id]->Next();
                     Key *results[scan_count];
                     Key *continueKey = NULL;
                     size_t resultsFound = 0;
@@ -349,11 +374,13 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
         {
             // Delete
             Key *end = end->make_leaf(UINT64_MAX, sizeof(uint64_t), 0);
+            next_thread_id.store(0);
             auto starttime = std::chrono::system_clock::now();
             tbb::parallel_for(tbb::blocked_range<uint64_t>(0, RUN_SIZE), [&](const tbb::blocked_range<uint64_t> &scope) {
                 auto t = tree.getThreadInfo();
+                int thread_id = next_thread_id.fetch_add(1);
                 for (uint64_t i = scope.begin(); i != scope.end(); i++) {
-                    uint64_t key_64 = rnd_delete.Next();
+                    uint64_t key_64 = rnd_delete[next_thread_id]->Next();
                     Key *key = key->make_leaf(key_64, sizeof(uint64_t), 0);
                     tree.remove(key, t);
                 }
@@ -369,11 +396,13 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
         hot::rowex::HOTRowex<IntKeyVal *, IntKeyExtractor> mTrie;
         {
             // Load
+            next_thread_id.store(0);
             auto starttime = std::chrono::system_clock::now();
             tbb::parallel_for(tbb::blocked_range<uint64_t>(0, LOAD_SIZE), [&](const tbb::blocked_range<uint64_t> &scope) {
+                int thread_id = next_thread_id.fetch_add(1);
                 for (uint64_t i = scope.begin(); i != scope.end(); i++) {
                     IntKeyVal *key;
-                    uint64_t key_64 = rnd_insert.Next();
+                    uint64_t key_64 = rnd_insert[thread_id]->Next();
                     stats.start();
                     posix_memalign((void **)&key, 64, sizeof(IntKeyVal));
                     key->key = key_64; key->value = key_64;
@@ -396,11 +425,13 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
 
         {
             // Put
+            next_thread_id.store(0);
             auto starttime = std::chrono::system_clock::now();
             tbb::parallel_for(tbb::blocked_range<uint64_t>(0, RUN_SIZE), [&](const tbb::blocked_range<uint64_t> &scope) {
+                int thread_id = next_thread_id.fetch_add(1);
                 for (uint64_t i = scope.begin(); i != scope.end(); i++) {
                     IntKeyVal *key;
-                    uint64_t key_64 = rnd_insert.Next();
+                    uint64_t key_64 = rnd_insert[thread_id]->Next();
                     posix_memalign((void **)&key, 64, sizeof(IntKeyVal));
                     key->key = key_64; key->value = key_64;
                     Dummy::clflush((char *)key, sizeof(IntKeyVal), true, true);
@@ -418,10 +449,12 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
         {
             // Get
             int notfound = 0;
+            next_thread_id.store(0);
             auto starttime = std::chrono::system_clock::now();
             tbb::parallel_for(tbb::blocked_range<uint64_t>(0, RUN_SIZE), [&](const tbb::blocked_range<uint64_t> &scope) {
+                int thread_id = next_thread_id.fetch_add(1);
                 for (uint64_t i = scope.begin(); i != scope.end(); i++) {
-                    uint64_t key_64 = rnd_get.Next();
+                    uint64_t key_64 = rnd_get[thread_id]->Next();
                     idx::contenthelpers::OptionalValue<IntKeyVal *> result = mTrie.lookup(key_64);
                     if (!result.mIsValid || result.mValue->value != key_64) {
                         notfound ++;
@@ -442,11 +475,14 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
             int count = 4;
             int scan_times = 100;
             int scan_count = 100;
+            
             while(count > 0) {
+            next_thread_id.store(0);
             auto starttime = std::chrono::system_clock::now();
             tbb::parallel_for(tbb::blocked_range<uint64_t>(0, scan_times), [&](const tbb::blocked_range<uint64_t> &scope) {
+                int thread_id = next_thread_id.fetch_add(1);
                 for (uint64_t i = scope.begin(); i != scope.end(); i++) {
-                    uint64_t key_64 = rnd_scan.Next();
+                    uint64_t key_64 = rnd_scan[thread_id]->Next();
                     uintptr_t buf[scan_count];
                     hot::rowex::HOTRowexSynchronizedIterator<IntKeyVal *, IntKeyExtractor> it = mTrie.lower_bound(key_64);
                     int resultsFound = 0;
@@ -472,7 +508,7 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
         //     auto starttime = std::chrono::system_clock::now();
         //     tbb::parallel_for(tbb::blocked_range<uint64_t>(0, 10000), [&](const tbb::blocked_range<uint64_t> &scope) {
         //         for (uint64_t i = scope.begin(); i != scope.end(); i++) {
-        //             uint64_t key_64 = rnd_scan.Next();
+        //             uint64_t key_64 = rnd_scan[thread_id]->Next();
         //             idx::contenthelpers::OptionalValue<IntKeyVal *> result = mTrie.scan(key_64, 100);
         //         }
         //     });
@@ -492,8 +528,8 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
 
         {
             // Load
-            auto starttime = std::chrono::system_clock::now();
             next_thread_id.store(0);
+            auto starttime = std::chrono::system_clock::now();
             t->UpdateThreadLocal(num_thread);
             auto func = [&]() {
                 int thread_id = next_thread_id.fetch_add(1);
@@ -502,7 +538,7 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
 
                 t->AssignGCID(thread_id);
                 for (uint64_t i = start_key; i < end_key; i++) {
-                    uint64_t key_64 = rnd_insert.Next();
+                    uint64_t key_64 = rnd_insert[thread_id]->Next();
                     stats.start();
                     t->Insert(key_64, key_64);
                     stats.end();
@@ -539,7 +575,7 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
 
                 t->AssignGCID(thread_id);
                 for (uint64_t i = start_key; i < end_key; i++) {
-                    uint64_t key_64 = rnd_insert.Next();
+                    uint64_t key_64 = rnd_insert[thread_id]->Next();
                     t->Insert(key_64, key_64);
                 }
                 t->UnregisterThread(thread_id);
@@ -572,7 +608,7 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
 
                 t->AssignGCID(thread_id);
                 for (uint64_t i = start_key; i < end_key; i++) {
-                    uint64_t key_64 = rnd_get.Next();
+                    uint64_t key_64 = rnd_get[thread_id]->Next();
                     v.clear();
                     t->GetValue(key_64, v);
                     if (v[0] != key_64) {
@@ -600,8 +636,8 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
             int scan_times = 100;
             int scan_count = 100;
             while(count >0 ) {
-            auto starttime = std::chrono::system_clock::now();
             next_thread_id.store(0);
+            auto starttime = std::chrono::system_clock::now();
             t->UpdateThreadLocal(num_thread);
             auto func = [&]() {
                 std::vector<uint64_t> v{};
@@ -613,7 +649,7 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
                 t->AssignGCID(thread_id);
                 for (uint64_t i = start_key; i < end_key; i++) {
                     uint64_t buf[scan_count];
-                    uint64_t key_64 = rnd_scan.Next();
+                    uint64_t key_64 = rnd_scan[thread_id]->Next();
                     auto it = t->Begin(key_64);
 
                     int resultsFound = 0;
@@ -642,8 +678,8 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
         }
         {
             // Delete
-            auto starttime = std::chrono::system_clock::now();
             next_thread_id.store(0);
+            auto starttime = std::chrono::system_clock::now();
             t->UpdateThreadLocal(num_thread);
             auto func = [&]() {
                 std::vector<uint64_t> v{};
@@ -654,7 +690,7 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
 
                 t->AssignGCID(thread_id);
                 for (uint64_t i = start_key; i < end_key; i++) {
-                    uint64_t key_64 = rnd_delete.Next();
+                    uint64_t key_64 = rnd_delete[next_thread_id]->Next();
                     t->Delete(key_64, key_64);
                 }
             };
@@ -680,10 +716,12 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
 
         {
             // Load
+            next_thread_id.store(0);
             auto starttime = std::chrono::system_clock::now();
             tbb::parallel_for(tbb::blocked_range<uint64_t>(0, LOAD_SIZE), [&](const tbb::blocked_range<uint64_t> &scope) {
+                int thread_id = next_thread_id.fetch_add(1);
                 for (uint64_t i = scope.begin(); i != scope.end(); i++) {
-                    uint64_t key_64 = rnd_insert.Next();
+                    uint64_t key_64 = rnd_insert[thread_id]->Next();
                     stats.start();
                     tree->put(key_64, (void *)key_64);
                     stats.end();
@@ -700,10 +738,12 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
 
         {
             // Put
+            next_thread_id.store(0);
             auto starttime = std::chrono::system_clock::now();
             tbb::parallel_for(tbb::blocked_range<uint64_t>(0, RUN_SIZE), [&](const tbb::blocked_range<uint64_t> &scope) {
+                int thread_id = next_thread_id.fetch_add(1);
                 for (uint64_t i = scope.begin(); i != scope.end(); i++) {
-                    uint64_t key_64 = rnd_insert.Next();
+                    uint64_t key_64 = rnd_insert[thread_id]->Next();
                     tree->put(key_64, (void *)key_64);
                 }
             });
@@ -714,10 +754,12 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
 
         {
             // Get
+            next_thread_id.store(0);
             auto starttime = std::chrono::system_clock::now();
             tbb::parallel_for(tbb::blocked_range<uint64_t>(0, RUN_SIZE), [&](const tbb::blocked_range<uint64_t> &scope) {
+                int thread_id = next_thread_id.fetch_add(1);
                 for (uint64_t i = scope.begin(); i != scope.end(); i++) {
-                    uint64_t key_64 = rnd_get.Next();
+                    uint64_t key_64 = rnd_get[thread_id]->Next();
                     uint64_t *ret = reinterpret_cast<uint64_t *> (tree->get(key_64));
                     if ((uint64_t)ret != key_64) {
                         printf("[MASS] search key = %lu, search value = %lu\n", key_64, (uint64_t)ret);
@@ -737,10 +779,12 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
             int scan_times = 100;
             int scan_count = 100;
             while(count >0 ) {
+            next_thread_id.store(0);
             auto starttime = std::chrono::system_clock::now();
             tbb::parallel_for(tbb::blocked_range<uint64_t>(0, 10000), [&](const tbb::blocked_range<uint64_t> &scope) {
+                int thread_id = next_thread_id.fetch_add(1);
                 for (uint64_t i = scope.begin(); i != scope.end(); i++) {
-                    uint64_t key_64 = rnd_scan.Next();
+                    uint64_t key_64 = rnd_scan[thread_id]->Next();
                     uint64_t buf[scan_count];
                     int ret = tree->scan(key_64, scan_count, buf);
                 }
@@ -755,10 +799,12 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
 
         {
             // Delete
+            next_thread_id.store(0);
             auto starttime = std::chrono::system_clock::now();
             tbb::parallel_for(tbb::blocked_range<uint64_t>(0, RUN_SIZE), [&](const tbb::blocked_range<uint64_t> &scope) {
+                int thread_id = next_thread_id.fetch_add(1);
                 for (uint64_t i = scope.begin(); i != scope.end(); i++) {
-                    uint64_t key_64 = rnd_delete.Next();
+                    uint64_t key_64 = rnd_delete[next_thread_id]->Next();
                     tree->del(key_64);
                 }
             });
@@ -777,12 +823,10 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
 
         thread_data_t *tds = (thread_data_t *) malloc(num_thread * sizeof(thread_data_t));
 
-        std::atomic<int> next_thread_id;
-
         {
             // Load
-            auto starttime = std::chrono::system_clock::now();
             next_thread_id.store(0);
+            auto starttime = std::chrono::system_clock::now();
             auto func = [&]() {
                 int thread_id = next_thread_id.fetch_add(1);
                 tds[thread_id].id = thread_id;
@@ -795,7 +839,7 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
                 barrier_cross(&barrier);
 
                 for (uint64_t i = start_key; i < end_key; i++) {
-                    uint64_t key_64 = rnd_insert.Next();
+                    uint64_t key_64 = rnd_insert[thread_id]->Next();
                     stats.start();
                     clht_put(tds[thread_id].ht, key_64, key_64);
                     stats.end();
@@ -822,8 +866,8 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
 
         {
             // Put
-            auto starttime = std::chrono::system_clock::now();
             next_thread_id.store(0);
+            auto starttime = std::chrono::system_clock::now();
             auto func = [&]() {
                 int thread_id = next_thread_id.fetch_add(1);
                 tds[thread_id].id = thread_id;
@@ -836,7 +880,7 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
                 barrier_cross(&barrier);
 
                 for (uint64_t i = start_key; i < end_key; i++) {
-                    uint64_t key_64 = rnd_insert.Next();
+                    uint64_t key_64 = rnd_insert[thread_id]->Next();
                     clht_put(tds[thread_id].ht, key_64, key_64);
                 }
             };
@@ -855,8 +899,8 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
         barrier.crossing = 0;
         {
             // Get
-            auto starttime = std::chrono::system_clock::now();
             next_thread_id.store(0);
+            auto starttime = std::chrono::system_clock::now();
             auto func = [&]() {
                 int thread_id = next_thread_id.fetch_add(1);
                 tds[thread_id].id = thread_id;
@@ -869,7 +913,7 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
                 barrier_cross(&barrier);
 
                 for (uint64_t i = start_key; i < end_key; i++) {
-                    uint64_t key_64 = rnd_get.Next();
+                    uint64_t key_64 = rnd_get[thread_id]->Next();
                     uintptr_t val = clht_get(tds[thread_id].ht->ht, key_64);
                     if (val != key_64) {
                         std::cout << "[CLHT] wrong key read: " << val << "expected: " << key_64 << std::endl;
@@ -893,8 +937,8 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
         barrier.crossing = 0;
         {
             // Delete
-            auto starttime = std::chrono::system_clock::now();
             next_thread_id.store(0);
+            auto starttime = std::chrono::system_clock::now();
             auto func = [&]() {
                 int thread_id = next_thread_id.fetch_add(1);
                 tds[thread_id].id = thread_id;
@@ -907,7 +951,7 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
                 barrier_cross(&barrier);
 
                 for (uint64_t i = start_key; i < end_key; i++) {
-                    uint64_t key_64 = rnd_insert.Next();
+                    uint64_t key_64 = rnd_insert[thread_id]->Next();
                     auto ret = clht_remove(tds[thread_id].ht, key_64);
                 }
             };
@@ -935,6 +979,15 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
 #ifndef STRING_TYPE
         
 #endif
+    }
+
+    {
+        for(int i = 0; i < num_thread; i ++) {
+            delete rnd_insert[i];
+            delete rnd_get[i];
+            delete rnd_scan[i];
+            delete rnd_delete[i];
+        }
     }
 }
 
