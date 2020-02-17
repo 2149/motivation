@@ -1068,7 +1068,7 @@ int main(int argc, char **argv) {
     }
 
     int num_thread = atoi(argv[5]);
-    tbb::task_scheduler_init init(num_thread);
+    tbb::task_scheduler_init init(num_thread - 1);
 
     if (kt != STRING_KEY) {
         std::vector<uint64_t> init_keys;
