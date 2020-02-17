@@ -901,7 +901,7 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
                 int thread_id = next_thread_id.fetch_add(1);
                 uint64_t start_key = scan_times / num_thread * (uint64_t)thread_id;
                 uint64_t end_key = start_key + scan_times / num_thread;
-                for (uint64_t i = start_key; i != end_key; i++) { {
+                for (uint64_t i = start_key; i != end_key; i++) {
                     uint64_t key_64 = rnd_scan[thread_id]->Next();
                     uint64_t buf[scan_count];
                     int ret = tree->scan(key_64, scan_count, buf);
@@ -1206,7 +1206,7 @@ int main(int argc, char **argv) {
     }
 
     int num_thread = atoi(argv[5]);
-    tbb::task_scheduler_init init(num_thread - 1);
+    tbb::task_scheduler_init init(num_thread);
 
     if (kt != STRING_KEY) {
         std::vector<uint64_t> init_keys;
