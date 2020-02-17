@@ -314,8 +314,8 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
             auto starttime = std::chrono::system_clock::now();
             auto func = [&]() {
                 int thread_id = next_thread_id.fetch_add(1);
-                uint64_t start_key = LOAD_SIZE / num_thread * (uint64_t)thread_id;
-                uint64_t end_key = start_key + LOAD_SIZE / num_thread;
+                uint64_t start_key = RUN_SIZE / num_thread * (uint64_t)thread_id;
+                uint64_t end_key = start_key + RUN_SIZE / num_thread;
                 auto t = tree.getThreadInfo();
 
                 for (uint64_t i = start_key; i != end_key; i++) {
@@ -345,8 +345,8 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
             auto starttime = std::chrono::system_clock::now();
             auto func = [&]() {
                 int thread_id = next_thread_id.fetch_add(1);
-                uint64_t start_key = LOAD_SIZE / num_thread * (uint64_t)thread_id;
-                uint64_t end_key = start_key + LOAD_SIZE / num_thread;
+                uint64_t start_key = RUN_SIZE / num_thread * (uint64_t)thread_id;
+                uint64_t end_key = start_key + RUN_SIZE / num_thread;
                 auto t = tree.getThreadInfo();
                 
                 for (uint64_t i = start_key; i != end_key; i++) {
@@ -383,8 +383,8 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
             auto starttime = std::chrono::system_clock::now();
             auto func = [&]() {
                 int thread_id = next_thread_id.fetch_add(1);
-                uint64_t start_key = LOAD_SIZE / num_thread * (uint64_t)thread_id;
-                uint64_t end_key = start_key + LOAD_SIZE / num_thread;
+                uint64_t start_key = scan_times / num_thread * (uint64_t)thread_id;
+                uint64_t end_key = start_key + scan_times / num_thread;
                 auto t = tree.getThreadInfo();
 
                 for (uint64_t i = start_key; i != end_key; i++) {
@@ -448,9 +448,11 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
             // Load
             next_thread_id.store(0);
             auto starttime = std::chrono::system_clock::now();
-            tbb::parallel_for(tbb::blocked_range<uint64_t>(0, LOAD_SIZE), [&](const tbb::blocked_range<uint64_t> &scope) {
+            auto func = [&]() {
                 int thread_id = next_thread_id.fetch_add(1);
-                for (uint64_t i = scope.begin(); i != scope.end(); i++) {
+                uint64_t start_key = LOAD_SIZE / num_thread * (uint64_t)thread_id;
+                uint64_t end_key = start_key + LOAD_SIZE / num_thread;
+                for (uint64_t i = start_key; i != end_key; i++) {
                     IntKeyVal *key;
                     uint64_t key_64 = rnd_insert[thread_id]->Next();
                     stats.start();
@@ -467,7 +469,14 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
                         stats.PrintLatency(i);
                     }
                 }
-            });
+            };
+            std::vector<std::thread> thread_group;
+
+            for (int i = 0; i < num_thread; i++)
+                thread_group.push_back(std::thread{func});
+
+            for (int i = 0; i < num_thread; i++)
+                thread_group[i].join();
             auto duration = std::chrono::duration_cast<std::chrono::microseconds>(
                     std::chrono::system_clock::now() - starttime);
             printf("Load_Throughput: load, %f ,ops/s\n", (LOAD_SIZE * 1.0) / duration.count() * 1000000);
@@ -477,9 +486,11 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
             // Put
             next_thread_id.store(0);
             auto starttime = std::chrono::system_clock::now();
-            tbb::parallel_for(tbb::blocked_range<uint64_t>(0, RUN_SIZE), [&](const tbb::blocked_range<uint64_t> &scope) {
+            auto func = [&]() {
                 int thread_id = next_thread_id.fetch_add(1);
-                for (uint64_t i = scope.begin(); i != scope.end(); i++) {
+                uint64_t start_key = RUN_SIZE / num_thread * (uint64_t)thread_id;
+                uint64_t end_key = start_key + RUN_SIZE / num_thread;
+                for (uint64_t i = start_key; i != end_key; i++) {
                     IntKeyVal *key;
                     uint64_t key_64 = rnd_insert[thread_id]->Next();
                     posix_memalign((void **)&key, 64, sizeof(IntKeyVal));
@@ -490,7 +501,15 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
                         exit(1);
                     }
                 }
-            });
+            };
+            std::vector<std::thread> thread_group;
+
+            for (int i = 0; i < num_thread; i++)
+                thread_group.push_back(std::thread{func});
+
+            for (int i = 0; i < num_thread; i++)
+                thread_group[i].join();
+
             auto duration = std::chrono::duration_cast<std::chrono::microseconds>(
                     std::chrono::system_clock::now() - starttime);
             printf("Put_Throughput: run, %f ,ops/s\n", (RUN_SIZE * 1.0) / duration.count() * 1000000);
@@ -501,9 +520,11 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
             int notfound = 0;
             next_thread_id.store(0);
             auto starttime = std::chrono::system_clock::now();
-            tbb::parallel_for(tbb::blocked_range<uint64_t>(0, RUN_SIZE), [&](const tbb::blocked_range<uint64_t> &scope) {
+            auto func = [&]() {
                 int thread_id = next_thread_id.fetch_add(1);
-                for (uint64_t i = scope.begin(); i != scope.end(); i++) {
+                uint64_t start_key = RUN_SIZE / num_thread * (uint64_t)thread_id;
+                uint64_t end_key = start_key + RUN_SIZE / num_thread;
+                for (uint64_t i = start_key; i != end_key; i++) {
                     uint64_t key_64 = rnd_get[thread_id]->Next();
                     idx::contenthelpers::OptionalValue<IntKeyVal *> result = mTrie.lookup(key_64);
                     if (!result.mIsValid || result.mValue->value != key_64) {
@@ -513,7 +534,14 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
                         // exit(1);
                     }
                 }
-            });
+            };
+            std::vector<std::thread> thread_group;
+
+            for (int i = 0; i < num_thread; i++)
+                thread_group.push_back(std::thread{func});
+
+            for (int i = 0; i < num_thread; i++)
+                thread_group[i].join();
             auto duration = std::chrono::duration_cast<std::chrono::microseconds>(
                     std::chrono::system_clock::now() - starttime);
             printf("Get_Throughput: run, %f ,ops/s\n", (RUN_SIZE * 1.0) / duration.count() * 1000000);
@@ -529,9 +557,11 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
             while(count > 0) {
             next_thread_id.store(0);
             auto starttime = std::chrono::system_clock::now();
-            tbb::parallel_for(tbb::blocked_range<uint64_t>(0, scan_times), [&](const tbb::blocked_range<uint64_t> &scope) {
+            auto func = [&]() {
                 int thread_id = next_thread_id.fetch_add(1);
-                for (uint64_t i = scope.begin(); i != scope.end(); i++) {
+                uint64_t start_key = scan_times / num_thread * (uint64_t)thread_id;
+                uint64_t end_key = start_key + scan_times / num_thread;
+                for (uint64_t i = start_key; i != end_key; i++) { {
                     uint64_t key_64 = rnd_scan[thread_id]->Next();
                     uintptr_t buf[scan_count];
                     hot::rowex::HOTRowexSynchronizedIterator<IntKeyVal *, IntKeyExtractor> it = mTrie.lower_bound(key_64);
@@ -544,7 +574,15 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
                     printf("Found %d, while scan %d\n", resultsFound, scan_count);
                     // idx::contenthelpers::OptionalValue<IntKeyVal *> result = mTrie.scan(key_64, scan_count);
                 }
-            });
+            };
+            std::vector<std::thread> thread_group;
+
+            for (int i = 0; i < num_thread; i++)
+                thread_group.push_back(std::thread{func});
+
+            for (int i = 0; i < num_thread; i++)
+                thread_group[i].join();
+
             auto duration = std::chrono::duration_cast<std::chrono::microseconds>(
                     std::chrono::system_clock::now() - starttime);
             printf("Scan_%d_Throughput: run, %f ,ops/s\n", scan_count, (scan_times * 1.0) / duration.count() * 1000000);
@@ -768,9 +806,11 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
             // Load
             next_thread_id.store(0);
             auto starttime = std::chrono::system_clock::now();
-            tbb::parallel_for(tbb::blocked_range<uint64_t>(0, LOAD_SIZE), [&](const tbb::blocked_range<uint64_t> &scope) {
+            auto func = [&]() {
                 int thread_id = next_thread_id.fetch_add(1);
-                for (uint64_t i = scope.begin(); i != scope.end(); i++) {
+                uint64_t start_key = LOAD_SIZE / num_thread * (uint64_t)thread_id;
+                uint64_t end_key = start_key + LOAD_SIZE / num_thread;
+                for (uint64_t i = start_key; i != end_key; i++) {
                     uint64_t key_64 = rnd_insert[thread_id]->Next();
                     stats.start();
                     tree->put(key_64, (void *)key_64);
@@ -780,7 +820,14 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
                         stats.PrintLatency(i);
                     }
                 }
-            });
+            };
+            std::vector<std::thread> thread_group;
+
+            for (int i = 0; i < num_thread; i++)
+                thread_group.push_back(std::thread{func});
+
+            for (int i = 0; i < num_thread; i++)
+                thread_group[i].join();
             auto duration = std::chrono::duration_cast<std::chrono::microseconds>(
                     std::chrono::system_clock::now() - starttime);
             printf("Load_Throughput: load, %f ,ops/s\n", (LOAD_SIZE * 1.0) / duration.count() * 1000000);
@@ -790,13 +837,22 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
             // Put
             next_thread_id.store(0);
             auto starttime = std::chrono::system_clock::now();
-            tbb::parallel_for(tbb::blocked_range<uint64_t>(0, RUN_SIZE), [&](const tbb::blocked_range<uint64_t> &scope) {
+            auto func = [&]() {
                 int thread_id = next_thread_id.fetch_add(1);
-                for (uint64_t i = scope.begin(); i != scope.end(); i++) {
+                uint64_t start_key = RUN_SIZE / num_thread * (uint64_t)thread_id;
+                uint64_t end_key = start_key + RUN_SIZE / num_thread;
+                for (uint64_t i = start_key; i != end_key; i++) {
                     uint64_t key_64 = rnd_insert[thread_id]->Next();
                     tree->put(key_64, (void *)key_64);
                 }
-            });
+            };
+            std::vector<std::thread> thread_group;
+
+            for (int i = 0; i < num_thread; i++)
+                thread_group.push_back(std::thread{func});
+
+            for (int i = 0; i < num_thread; i++)
+                thread_group[i].join();
             auto duration = std::chrono::duration_cast<std::chrono::microseconds>(
                     std::chrono::system_clock::now() - starttime);
             printf("Put_Throughput: run, %f ,ops/s\n", (RUN_SIZE * 1.0) / duration.count() * 1000000);
@@ -806,9 +862,11 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
             // Get
             next_thread_id.store(0);
             auto starttime = std::chrono::system_clock::now();
-            tbb::parallel_for(tbb::blocked_range<uint64_t>(0, RUN_SIZE), [&](const tbb::blocked_range<uint64_t> &scope) {
+            auto func = [&]() {
                 int thread_id = next_thread_id.fetch_add(1);
-                for (uint64_t i = scope.begin(); i != scope.end(); i++) {
+                uint64_t start_key = RUN_SIZE / num_thread * (uint64_t)thread_id;
+                uint64_t end_key = start_key + RUN_SIZE / num_thread;
+                for (uint64_t i = start_key; i != end_key; i++) { 
                     uint64_t key_64 = rnd_get[thread_id]->Next();
                     uint64_t *ret = reinterpret_cast<uint64_t *> (tree->get(key_64));
                     if ((uint64_t)ret != key_64) {
@@ -816,7 +874,14 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
                         exit(1);
                     }
                 }
-            });
+            };
+            std::vector<std::thread> thread_group;
+
+            for (int i = 0; i < num_thread; i++)
+                thread_group.push_back(std::thread{func});
+
+            for (int i = 0; i < num_thread; i++)
+                thread_group[i].join();
             auto duration = std::chrono::duration_cast<std::chrono::microseconds>(
                     std::chrono::system_clock::now() - starttime);
             printf("Get_Throughput: run, %f ,ops/s\n", (RUN_SIZE * 1.0) / duration.count() * 1000000);
@@ -831,14 +896,23 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
             while(count >0 ) {
             next_thread_id.store(0);
             auto starttime = std::chrono::system_clock::now();
-            tbb::parallel_for(tbb::blocked_range<uint64_t>(0, 10000), [&](const tbb::blocked_range<uint64_t> &scope) {
+            auto func = [&]() {
                 int thread_id = next_thread_id.fetch_add(1);
-                for (uint64_t i = scope.begin(); i != scope.end(); i++) {
+                uint64_t start_key = scan_times / num_thread * (uint64_t)thread_id;
+                uint64_t end_key = start_key + scan_times / num_thread;
+                for (uint64_t i = start_key; i != end_key; i++) { {
                     uint64_t key_64 = rnd_scan[thread_id]->Next();
                     uint64_t buf[scan_count];
                     int ret = tree->scan(key_64, scan_count, buf);
                 }
-            });
+            };
+            std::vector<std::thread> thread_group;
+
+            for (int i = 0; i < num_thread; i++)
+                thread_group.push_back(std::thread{func});
+
+            for (int i = 0; i < num_thread; i++)
+                thread_group[i].join();
             auto duration = std::chrono::duration_cast<std::chrono::microseconds>(
                     std::chrono::system_clock::now() - starttime);
             printf("Scan_%d_Throughput: run, %f ,ops/s\n", scan_count, (scan_times * 1.0) / duration.count() * 1000000);
@@ -851,13 +925,22 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
             // Delete
             next_thread_id.store(0);
             auto starttime = std::chrono::system_clock::now();
-            tbb::parallel_for(tbb::blocked_range<uint64_t>(0, RUN_SIZE), [&](const tbb::blocked_range<uint64_t> &scope) {
+            auto func = [&]() {
                 int thread_id = next_thread_id.fetch_add(1);
-                for (uint64_t i = scope.begin(); i != scope.end(); i++) {
+                uint64_t start_key = RUN_SIZE / num_thread * (uint64_t)thread_id;
+                uint64_t end_key = start_key + RUN_SIZE / num_thread;
+                for (uint64_t i = start_key; i != end_key; i++) {
                     uint64_t key_64 = rnd_delete[next_thread_id]->Next();
                     tree->del(key_64);
                 }
-            });
+            };
+            std::vector<std::thread> thread_group;
+
+            for (int i = 0; i < num_thread; i++)
+                thread_group.push_back(std::thread{func});
+
+            for (int i = 0; i < num_thread; i++)
+                thread_group[i].join();
             auto duration = std::chrono::duration_cast<std::chrono::microseconds>(
                     std::chrono::system_clock::now() - starttime);
             printf("Delete_Throughput: run, %f ,ops/s\n", (RUN_SIZE * 1.0) / duration.count() * 1000000);
