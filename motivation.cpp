@@ -285,14 +285,8 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
                 int thread_id = next_thread_id.fetch_add(1);
                 for (uint64_t i = scope.begin(); i != scope.end(); i++) {
                     uint64_t key_64 = rnd_insert[thread_id]->Next();
-                    stats.start();
                     Key *key = key->make_leaf(key_64, sizeof(uint64_t), key_64);
                     tree.insert(key, t);
-                    stats.end();
-                    stats.add_put();
-                    if ((i % 1000) == 0) {
-                        stats.PrintLatency(i);
-                    }
                 }
             });
             auto duration = std::chrono::duration_cast<std::chrono::microseconds>(
