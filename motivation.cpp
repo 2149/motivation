@@ -283,6 +283,7 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
             tbb::parallel_for(tbb::blocked_range<uint64_t>(0, LOAD_SIZE), [&](const tbb::blocked_range<uint64_t> &scope) {
                 auto t = tree.getThreadInfo();
                 int thread_id = next_thread_id.fetch_add(1);
+                printf("Thread id = %d\n", thread_id);
                 for (uint64_t i = scope.begin(); i != scope.end(); i++) {
                     uint64_t key_64 = rnd_insert[thread_id]->Next();
                     Key *key = key->make_leaf(key_64, sizeof(uint64_t), key_64);
