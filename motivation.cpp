@@ -265,7 +265,7 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
     range_incomplete.store(0);
 
     {
-        for(int i = 0; i < num_thread; i ++) {
+        for(int i = 0; i <= num_thread; i ++) {
             rnd_insert[i] = new rocksdb::Random64(0xdeadbeef * (i + 1)); 
             rnd_get[i] = new rocksdb::Random64(0xdeadbeef * (i + 1)); 
             rnd_scan[i] = new rocksdb::Random64(0xdeadbeef * (i + 1)); 
@@ -283,7 +283,7 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
             tbb::parallel_for(tbb::blocked_range<uint64_t>(0, LOAD_SIZE), [&](const tbb::blocked_range<uint64_t> &scope) {
                 auto t = tree.getThreadInfo();
                 int thread_id = next_thread_id.fetch_add(1);
-                printf("Thread id = %d\n", thread_id);
+                printf("Thread id = %d, start %lld, end %lld.\n", thread_id, scope.begin(), scope.end());
                 for (uint64_t i = scope.begin(); i != scope.end(); i++) {
                     uint64_t key_64 = rnd_insert[thread_id]->Next();
                     Key *key = key->make_leaf(key_64, sizeof(uint64_t), key_64);
@@ -978,7 +978,7 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
     }
 
     {
-        for(int i = 0; i < num_thread; i ++) {
+        for(int i = 0; i <= num_thread; i ++) {
             delete rnd_insert[i];
             delete rnd_get[i];
             delete rnd_scan[i];
