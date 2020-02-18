@@ -546,7 +546,7 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
             auto duration = std::chrono::duration_cast<std::chrono::microseconds>(
                     std::chrono::system_clock::now() - starttime);
             printf("Get_Throughput: run, %f ,ops/s\n", (RUN_SIZE * 1.0) / duration.count() * 1000000);
-            printf("Not found key %d\n", notfound.lood());
+            printf("Not found key %d\n", notfound.load());
         }
 
         {
