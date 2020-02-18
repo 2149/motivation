@@ -261,8 +261,10 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
     rocksdb::Random64 *rnd_delete[num_thread];
 
     std::atomic<int> range_complete, range_incomplete;
+    std::atomic<int> notfound;
     range_complete.store(0);
     range_incomplete.store(0);
+    notfound.store(0);
 
     {
         for(int i = 0; i <= num_thread; i ++) {
@@ -517,7 +519,6 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
 
         {
             // Get
-            int notfound = 0;
             next_thread_id.store(0);
             auto starttime = std::chrono::system_clock::now();
             auto func = [&]() {
@@ -1165,7 +1166,6 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
 
         {
             // Get
-            Key *end = end->make_leaf(UINT64_MAX, sizeof(uint64_t), 0);
             next_thread_id.store(0);
             auto starttime = std::chrono::system_clock::now();
             auto func = [&]() {
@@ -1177,8 +1177,7 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
                     uint64_t key_64 = rnd_get[thread_id]->Next();
                     uint64_t *val = reinterpret_cast<uint64_t *>(bt->btree_search(key_64));
                     if ((uint64_t)val != key_64) {
-                        std::cout << "[ART] wrong key read: " << val << " expected:" << key_64 << std::endl;
-                        exit(1);
+                        notfound ++;
                     }
                 }
             };
@@ -1193,6 +1192,7 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
             auto duration = std::chrono::duration_cast<std::chrono::microseconds>(
                     std::chrono::system_clock::now() - starttime);
             printf("Get_Throughput: run, %f ,ops/s\n", (RUN_SIZE * 1.0) / duration.count() * 1000000);
+            printf("Not found key %d\n", notfound.load());
         }
 #ifdef ADD_SCAN
         {
