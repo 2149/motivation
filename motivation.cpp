@@ -1144,10 +1144,8 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
                 int thread_id = next_thread_id.fetch_add(1);
                 uint64_t start_key = RUN_SIZE / num_thread * (uint64_t)thread_id;
                 uint64_t end_key = start_key + RUN_SIZE / num_thread;
-                char *ret = reinterpret_cast<uint64_t *>(bt->btree_search(keys[i]));
                 for (uint64_t i = start_key; i != end_key; i++) {
                     uint64_t key_64 = rnd_insert[thread_id]->Next();
-                    Key *key = key->make_leaf(key_64, sizeof(uint64_t), key_64);
                     bt->btree_insert(key_64, (char *)key_64);
                 }
             };
@@ -1174,12 +1172,11 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
                 int thread_id = next_thread_id.fetch_add(1);
                 uint64_t start_key = RUN_SIZE / num_thread * (uint64_t)thread_id;
                 uint64_t end_key = start_key + RUN_SIZE / num_thread;
-                auto t = tree.getThreadInfo();
                 
                 for (uint64_t i = start_key; i != end_key; i++) {
                     uint64_t key_64 = rnd_get[thread_id]->Next();
                     uint64_t *val = reinterpret_cast<uint64_t *>(bt->btree_search(key_64));
-                    if ((uint64_t)(val) != key_64) {
+                    if ((uint64_t)val != key_64) {
                         std::cout << "[ART] wrong key read: " << val << " expected:" << key_64 << std::endl;
                         exit(1);
                     }
@@ -1211,7 +1208,6 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
                 int thread_id = next_thread_id.fetch_add(1);
                 uint64_t start_key = scan_times / num_thread * (uint64_t)thread_id;
                 uint64_t end_key = start_key + scan_times / num_thread;
-                auto t = tree.getThreadInfo();
 
                 for (uint64_t i = start_key; i != end_key; i++) {
                     uint64_t key_64 = rnd_scan[thread_id]->Next();
@@ -1235,7 +1231,7 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
             count --;
             }
         }
-#else
+#endif
         {
             // Delete
             Key *end = end->make_leaf(UINT64_MAX, sizeof(uint64_t), 0);
@@ -1245,7 +1241,6 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
                 int thread_id = next_thread_id.fetch_add(1);
                 uint64_t start_key = RUN_SIZE / num_thread * (uint64_t)thread_id;
                 uint64_t end_key = start_key + RUN_SIZE / num_thread;
-                auto t = tree.getThreadInfo();
                 for (uint64_t i = start_key; i != end_key; i++) {
                     uint64_t key_64 = rnd_delete[thread_id]->Next();
                     bt->btree_delete(key_64);
@@ -1334,7 +1329,7 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
                 for (uint64_t i = start_key; i != end_key; i++) { 
                     uint64_t key_64 = rnd_get[thread_id]->Next();
                     auto val = table->Get(key_64);
-                    if (val == NONE || ((unt64_t)val) != key_64) {
+                    if (val == NONE || ((uint64_t)val) != key_64) {
                         std::cout << "[Level Hashing] wrong key read: " << *(uint64_t *)val << " expected: " << keys[i] << std::endl;
                         exit(1);
                     }
