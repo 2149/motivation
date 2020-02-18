@@ -419,8 +419,8 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
             auto starttime = std::chrono::system_clock::now();
             auto func = [&]() {
                 int thread_id = next_thread_id.fetch_add(1);
-                uint64_t start_key = LOAD_SIZE / num_thread * (uint64_t)thread_id;
-                uint64_t end_key = start_key + LOAD_SIZE / num_thread;
+                uint64_t start_key = RUN_SIZE / num_thread * (uint64_t)thread_id;
+                uint64_t end_key = start_key + RUN_SIZE / num_thread;
                 auto t = tree.getThreadInfo();
                 for (uint64_t i = start_key; i != end_key; i++) {
                     uint64_t key_64 = rnd_delete[thread_id]->Next();
@@ -1103,9 +1103,281 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
         }
         clht_gc_destroy(hashtable);
     } else if (index_type == TYPE_FASTFAIR) {
-        printf("No implie for MASSTREE with motivation!\n");
+        // printf("No implie for MASSTREE with motivation!\n");
+        printf("Motivation test Fast-Fair start!\n");
+        fastfair::btree *bt = new fastfair::btree();
+        {
+            // Load
+            next_thread_id.store(0);
+            auto starttime = std::chrono::system_clock::now();
+            auto func = [&]() {
+                int thread_id = next_thread_id.fetch_add(1);
+                uint64_t start_key = LOAD_SIZE / num_thread * (uint64_t)thread_id;
+                uint64_t end_key = start_key + LOAD_SIZE / num_thread;
+
+                // printf("Thread id = %d, start %lld, end %lld.\n", thread_id, start_key, end_key);
+                for (uint64_t i = start_key; i != end_key; i++) {
+                    uint64_t key_64 = rnd_insert[thread_id]->Next();
+                    bt->btree_insert(key_64, (char *)key_64);
+                }
+            };
+
+            std::vector<std::thread> thread_group;
+
+            for (int i = 0; i < num_thread; i++)
+                thread_group.push_back(std::thread{func});
+
+            for (int i = 0; i < num_thread; i++)
+                thread_group[i].join();
+
+            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(
+                    std::chrono::system_clock::now() - starttime);
+            printf("Load_Throughput: load, %f ,ops/s\n", (LOAD_SIZE * 1.0) / duration.count() * 1000000);
+        }
+
+        {
+            // Put
+            Key *end = end->make_leaf(UINT64_MAX, sizeof(uint64_t), 0);
+            next_thread_id.store(0);
+            auto starttime = std::chrono::system_clock::now();
+            auto func = [&]() {
+                int thread_id = next_thread_id.fetch_add(1);
+                uint64_t start_key = RUN_SIZE / num_thread * (uint64_t)thread_id;
+                uint64_t end_key = start_key + RUN_SIZE / num_thread;
+                char *ret = reinterpret_cast<uint64_t *>(bt->btree_search(keys[i]));
+                for (uint64_t i = start_key; i != end_key; i++) {
+                    uint64_t key_64 = rnd_insert[thread_id]->Next();
+                    Key *key = key->make_leaf(key_64, sizeof(uint64_t), key_64);
+                    bt->btree_insert(key_64, (char *)key_64);
+                }
+            };
+
+            std::vector<std::thread> thread_group;
+
+            for (int i = 0; i < num_thread; i++)
+                thread_group.push_back(std::thread{func});
+
+            for (int i = 0; i < num_thread; i++)
+                thread_group[i].join();
+
+            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(
+                    std::chrono::system_clock::now() - starttime);
+            printf("Put_Throughput: run, %f ,ops/s\n", (RUN_SIZE * 1.0) / duration.count() * 1000000);
+        }
+
+        {
+            // Get
+            Key *end = end->make_leaf(UINT64_MAX, sizeof(uint64_t), 0);
+            next_thread_id.store(0);
+            auto starttime = std::chrono::system_clock::now();
+            auto func = [&]() {
+                int thread_id = next_thread_id.fetch_add(1);
+                uint64_t start_key = RUN_SIZE / num_thread * (uint64_t)thread_id;
+                uint64_t end_key = start_key + RUN_SIZE / num_thread;
+                auto t = tree.getThreadInfo();
+                
+                for (uint64_t i = start_key; i != end_key; i++) {
+                    uint64_t key_64 = rnd_get[thread_id]->Next();
+                    uint64_t *val = reinterpret_cast<uint64_t *>(bt->btree_search(key_64));
+                    if ((uint64_t)(val) != key_64) {
+                        std::cout << "[ART] wrong key read: " << val << " expected:" << key_64 << std::endl;
+                        exit(1);
+                    }
+                }
+            };
+            std::vector<std::thread> thread_group;
+
+            for (int i = 0; i < num_thread; i++)
+                thread_group.push_back(std::thread{func});
+
+            for (int i = 0; i < num_thread; i++)
+                thread_group[i].join();
+
+            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(
+                    std::chrono::system_clock::now() - starttime);
+            printf("Get_Throughput: run, %f ,ops/s\n", (RUN_SIZE * 1.0) / duration.count() * 1000000);
+        }
+#ifdef ADD_SCAN
+        {
+            // Scan
+            Key *end = end->make_leaf(UINT64_MAX, sizeof(uint64_t), 0);
+            int count = 4;
+            int scan_times = 100;
+            int scan_count = 100;
+            while(count >0 ) {
+            next_thread_id.store(0);
+            auto starttime = std::chrono::system_clock::now();
+            auto func = [&]() {
+                int thread_id = next_thread_id.fetch_add(1);
+                uint64_t start_key = scan_times / num_thread * (uint64_t)thread_id;
+                uint64_t end_key = start_key + scan_times / num_thread;
+                auto t = tree.getThreadInfo();
+
+                for (uint64_t i = start_key; i != end_key; i++) {
+                    uint64_t key_64 = rnd_scan[thread_id]->Next();
+                    size_t resultsFound = 0;
+                    size_t resultsSize = scan_count;
+                    uint64_t *results[resultsSize];
+                    bt->btree_search_range (key_64, UINT64_MAX, buf, resultsSize, resultsFound);
+                }
+            };
+            std::vector<std::thread> thread_group;
+
+            for (int i = 0; i < num_thread; i++)
+                thread_group.push_back(std::thread{func});
+
+            for (int i = 0; i < num_thread; i++)
+                thread_group[i].join();
+            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(
+                    std::chrono::system_clock::now() - starttime);
+            printf("Scan_%d_Throughput: run, %f ,ops/s\n", scan_count, (scan_times * 1.0) / duration.count() * 1000000);
+            scan_count *= 10;
+            count --;
+            }
+        }
+#else
+        {
+            // Delete
+            Key *end = end->make_leaf(UINT64_MAX, sizeof(uint64_t), 0);
+            next_thread_id.store(0);
+            auto starttime = std::chrono::system_clock::now();
+            auto func = [&]() {
+                int thread_id = next_thread_id.fetch_add(1);
+                uint64_t start_key = RUN_SIZE / num_thread * (uint64_t)thread_id;
+                uint64_t end_key = start_key + RUN_SIZE / num_thread;
+                auto t = tree.getThreadInfo();
+                for (uint64_t i = start_key; i != end_key; i++) {
+                    uint64_t key_64 = rnd_delete[thread_id]->Next();
+                    bt->btree_delete(key_64);
+                }
+            };
+            std::vector<std::thread> thread_group;
+
+            for (int i = 0; i < num_thread; i++)
+                thread_group.push_back(std::thread{func});
+
+            for (int i = 0; i < num_thread; i++)
+                thread_group[i].join();
+            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(
+                    std::chrono::system_clock::now() - starttime);
+            printf("Delete_Throughput: run, %f ,ops/s\n", (RUN_SIZE * 1.0) / duration.count() * 1000000);
+        }
+        delete bt;
     } else if (index_type == TYPE_LEVELHASH) {
-        printf("No implie for MASSTREE with motivation!\n");
+        // printf("No implie for MASSTREE with motivation!\n");
+        printf("Motivation test Level-Hash start!\n");
+        Hash *table = new LevelHashing(10);
+        {
+            // Load
+            next_thread_id.store(0);
+            auto starttime = std::chrono::system_clock::now();
+            auto func = [&]() {
+                int thread_id = next_thread_id.fetch_add(1);
+                uint64_t start_key = LOAD_SIZE / num_thread * (uint64_t)thread_id;
+                uint64_t end_key = start_key + LOAD_SIZE / num_thread;
+                for (uint64_t i = start_key; i != end_key; i++) {
+                    uint64_t key_64 = rnd_insert[thread_id]->Next();
+                    stats.start();
+                    table->Insert(key_64, reinterpret_cast<const char*>(key_64));
+                    stats.end();
+                    stats.add_put();
+                    if ((i % 1000) == 0) {
+                        stats.PrintLatency(i);
+                    }
+                }
+            };
+            std::vector<std::thread> thread_group;
+
+            for (int i = 0; i < num_thread; i++)
+                thread_group.push_back(std::thread{func});
+
+            for (int i = 0; i < num_thread; i++)
+                thread_group[i].join();
+            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(
+                    std::chrono::system_clock::now() - starttime);
+            printf("Load_Throughput: load, %f ,ops/s\n", (LOAD_SIZE * 1.0) / duration.count() * 1000000);
+        }
+
+        {
+            // Put
+            next_thread_id.store(0);
+            auto starttime = std::chrono::system_clock::now();
+            auto func = [&]() {
+                int thread_id = next_thread_id.fetch_add(1);
+                uint64_t start_key = RUN_SIZE / num_thread * (uint64_t)thread_id;
+                uint64_t end_key = start_key + RUN_SIZE / num_thread;
+                for (uint64_t i = start_key; i != end_key; i++) {
+                    uint64_t key_64 = rnd_insert[thread_id]->Next();
+                    table->Insert(key_64, reinterpret_cast<const char*>(key_64));
+                }
+            };
+            std::vector<std::thread> thread_group;
+
+            for (int i = 0; i < num_thread; i++)
+                thread_group.push_back(std::thread{func});
+
+            for (int i = 0; i < num_thread; i++)
+                thread_group[i].join();
+            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(
+                    std::chrono::system_clock::now() - starttime);
+            printf("Put_Throughput: run, %f ,ops/s\n", (RUN_SIZE * 1.0) / duration.count() * 1000000);
+        }
+
+        {
+            // Get
+            next_thread_id.store(0);
+            auto starttime = std::chrono::system_clock::now();
+            auto func = [&]() {
+                int thread_id = next_thread_id.fetch_add(1);
+                uint64_t start_key = RUN_SIZE / num_thread * (uint64_t)thread_id;
+                uint64_t end_key = start_key + RUN_SIZE / num_thread;
+                for (uint64_t i = start_key; i != end_key; i++) { 
+                    uint64_t key_64 = rnd_get[thread_id]->Next();
+                    auto val = table->Get(key_64);
+                    if (val == NONE || ((unt64_t)val) != key_64) {
+                        std::cout << "[Level Hashing] wrong key read: " << *(uint64_t *)val << " expected: " << keys[i] << std::endl;
+                        exit(1);
+                    }
+                }
+            };
+            std::vector<std::thread> thread_group;
+
+            for (int i = 0; i < num_thread; i++)
+                thread_group.push_back(std::thread{func});
+
+            for (int i = 0; i < num_thread; i++)
+                thread_group[i].join();
+            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(
+                    std::chrono::system_clock::now() - starttime);
+            printf("Get_Throughput: run, %f ,ops/s\n", (RUN_SIZE * 1.0) / duration.count() * 1000000);
+        }
+
+        {
+            // Delete
+            next_thread_id.store(0);
+            auto starttime = std::chrono::system_clock::now();
+            auto func = [&]() {
+                int thread_id = next_thread_id.fetch_add(1);
+                uint64_t start_key = RUN_SIZE / num_thread * (uint64_t)thread_id;
+                uint64_t end_key = start_key + RUN_SIZE / num_thread;
+                for (uint64_t i = start_key; i != end_key; i++) {
+                    uint64_t key_64 = rnd_delete[thread_id]->Next();
+                    table->Delete(key_64);
+                }
+            };
+            std::vector<std::thread> thread_group;
+
+            for (int i = 0; i < num_thread; i++)
+                thread_group.push_back(std::thread{func});
+
+            for (int i = 0; i < num_thread; i++)
+                thread_group[i].join();
+            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(
+                    std::chrono::system_clock::now() - starttime);
+            printf("Delete_Throughput: run, %f ,ops/s\n", (RUN_SIZE * 1.0) / duration.count() * 1000000);
+        }
+        delete table;
+
     } else if (index_type == TYPE_CCEH) {
         printf("No implie for MASSTREE with motivation!\n");
     } else if (index_type == TYPE_WOART) {
