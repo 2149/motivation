@@ -296,7 +296,7 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
                     tree.insert(key, t);
                     stats.end();
                     stats.add_put();
-                    if ((i % 1000) == 0) {
+                    if ((i % 10000) == 0) {
                         stats.PrintLatency(i);
                     }
                 }
@@ -473,7 +473,7 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
                     }
                     stats.end();
                     stats.add_put();
-                    if ((i % 1000) == 0) {
+                    if ((i % 10000) == 0) {
                         stats.PrintLatency(i);
                     }
                 }
@@ -639,7 +639,7 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
                     t->Insert(key_64, key_64);
                     stats.end();
                     stats.add_put();
-                    if ((i % 1000) == 0) {
+                    if ((i % 10000) == 0) {
                         stats.PrintLatency(i);
                     }
                 }
@@ -824,7 +824,7 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
                     tree->put(key_64, (void *)key_64);
                     stats.end();
                     stats.add_put();
-                    if ((i % 1000) == 0) {
+                    if ((i % 10000) == 0) {
                         stats.PrintLatency(i);
                     }
                 }
@@ -985,7 +985,7 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
                     clht_put(tds[thread_id].ht, key_64, key_64);
                     stats.end();
                     stats.add_put();
-                    if ((i % 1000) == 0) {
+                    if ((i % 10000) == 0) {
                         stats.PrintLatency(i);
                     }
                 }
@@ -1129,7 +1129,7 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
                     bt->btree_insert(key_64, (char *)key_64);
                     stats.end();
                     stats.add_put();
-                    if ((i % 1000) == 0) {
+                    if ((i % 10000) == 0) {
                         stats.PrintLatency(i);
                     }
                 }
@@ -1288,7 +1288,7 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
                     table->Insert(key_64, reinterpret_cast<const char*>(key_64));
                     stats.end();
                     stats.add_put();
-                    if ((i % 1000) == 0) {
+                    if ((i % 10000) == 0) {
                         stats.PrintLatency(i);
                     }
                 }
