@@ -292,7 +292,13 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
                 for (uint64_t i = start_key; i != end_key; i++) {
                     uint64_t key_64 = rnd_insert[thread_id]->Next();
                     Key *key = key->make_leaf(key_64, sizeof(uint64_t), key_64);
+                    stats.start();
                     tree.insert(key, t);
+                    stats.end();
+                    stats.add_put();
+                    if ((i % 1000) == 0) {
+                        stats.PrintLatency(i);
+                    }
                 }
             };
 
@@ -1119,7 +1125,13 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
                 // printf("Thread id = %d, start %lld, end %lld.\n", thread_id, start_key, end_key);
                 for (uint64_t i = start_key; i != end_key; i++) {
                     uint64_t key_64 = rnd_insert[thread_id]->Next();
+                    stats.start();
                     bt->btree_insert(key_64, (char *)key_64);
+                    stats.end();
+                    stats.add_put();
+                    if ((i % 1000) == 0) {
+                        stats.PrintLatency(i);
+                    }
                 }
             };
 
