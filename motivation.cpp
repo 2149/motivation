@@ -1222,8 +1222,8 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
 
                 for (uint64_t i = start_key; i != end_key; i++) {
                     uint64_t key_64 = rnd_scan[thread_id]->Next();
-                    size_t resultsFound = 0;
-                    size_t resultsSize = scan_count;
+                    int resultsFound = 0;
+                    int resultsSize = scan_count;
                     uint64_t results[resultsSize];
                     bt->btree_search_range (key_64, UINT64_MAX, results, resultsSize, resultsFound);
                 }
