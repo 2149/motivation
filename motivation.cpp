@@ -1206,7 +1206,6 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
             printf("Get_Throughput: run, %f ,ops/s\n", (RUN_SIZE * 1.0) / duration.count() * 1000000);
             printf("Not found key %d\n", notfound.load());
         }
-#ifdef ADD_SCAN
         {
             // Scan
             Key *end = end->make_leaf(UINT64_MAX, sizeof(uint64_t), 0);
@@ -1243,7 +1242,6 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
             count --;
             }
         }
-#endif
         {
             // Delete
             Key *end = end->make_leaf(UINT64_MAX, sizeof(uint64_t), 0);
