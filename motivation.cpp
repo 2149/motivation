@@ -1225,7 +1225,7 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
                     size_t resultsFound = 0;
                     size_t resultsSize = scan_count;
                     uint64_t *results[resultsSize];
-                    bt->btree_search_range (key_64, UINT64_MAX, buf, resultsSize, resultsFound);
+                    bt->btree_search_range (key_64, UINT64_MAX, results, resultsSize, resultsFound);
                 }
             };
             std::vector<std::thread> thread_group;
