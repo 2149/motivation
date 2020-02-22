@@ -1454,7 +1454,7 @@ int main(int argc, char **argv) {
 
     tbb::task_scheduler_init init(num_thread);
     
-    motivation_run_randint(index_type, wl, kt, ap, num_thread, init_keys, keys, ranges, ops);
+    motivation_run_randint(index_type, num_thread);
     
 
     return 0;
