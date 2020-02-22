@@ -228,7 +228,7 @@ barrier_t barrier;
 /////////////////////////////////////////////////////////////////////////////////
 
 static uint64_t LOAD_SIZE = 4000000;
-static uint64_t RUN_SIZE = 1000000;
+static uint64_t RUN_SIZE = 100000;
 
 void loadKey(TID tid, Key &key) {
     return ;
@@ -298,6 +298,7 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
                     stats.add_put();
                     if ((i % 10000) == 0) {
                         stats.PrintLatency(i);
+                        ART_ROWEX::print_stats(10000);
                     }
                 }
             };
@@ -826,6 +827,7 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
                     stats.add_put();
                     if ((i % 10000) == 0) {
                         stats.PrintLatency(i);
+                        masstree::print_stats(10000);
                     }
                 }
             };
@@ -987,6 +989,7 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
                     stats.add_put();
                     if ((i % 10000) == 0) {
                         stats.PrintLatency(i);
+                        clht_print_stats(10000);
                     }
                 }
             };
@@ -1131,6 +1134,7 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
                     stats.add_put();
                     if ((i % 10000) == 0) {
                         stats.PrintLatency(i);
+                        fastfair::print_stats(10000);
                     }
                 }
             };
@@ -1288,6 +1292,7 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
                     stats.add_put();
                     if ((i % 10000) == 0) {
                         stats.PrintLatency(i);
+                        lh_print_stats(10000);
                     }
                 }
             };
