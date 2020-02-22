@@ -243,15 +243,8 @@ static int SetRandSeed(void) {
     }
 }
 
-void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thread,
-        std::vector<uint64_t> &init_keys,
-        std::vector<uint64_t> &keys,
-        std::vector<int> &ranges,
-        std::vector<int> &ops)
+void motivation_run_randint(int index_type, int num_thread)
 {
-    std::string op;
-    uint64_t key;
-    int range;
     Statistic stats;
 
 
@@ -1408,14 +1401,13 @@ void motivation_run_randint(int index_type, int wl, int kt, int ap, int num_thre
 }
 
 int main(int argc, char **argv) {
-    if (argc != 6) {
-        std::cout << "Usage: ./ycsb [index type] [ycsb workload type] [key distribution] [access pattern] [number of threads]\n";
+    if (argc < 3) {
+        std::cout << "Usage: ./ycsb [index type] [number of threads] (load size) (run size)\n";
         std::cout << "1. index type: art hot bwtree masstree clht\n";
         std::cout << "               fastfair levelhash cceh woart\n";
-        std::cout << "2. ycsb workload type: a, b, c, e\n";
-        std::cout << "3. key distribution: randint, string\n";
-        std::cout << "4. access pattern: uniform, zipfian\n";
-        std::cout << "5. number of threads (integer)\n";
+        std::cout << "2. number of threads (integer)\n";
+        std::cout << "[3]. load size (integer)\n";
+        std::cout << "[4]. run size (integer)\n";
         return 1;
     }
 
@@ -1449,67 +1441,21 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
-    int wl;
-    if (strcmp(argv[2], "a") == 0) {
-        wl = WORKLOAD_A;
-    } else if (strcmp(argv[2], "b") == 0) {
-        wl = WORKLOAD_B;
-    } else if (strcmp(argv[2], "c") == 0) {
-        wl = WORKLOAD_C;
-    } else if (strcmp(argv[2], "d") == 0) {
-        wl = WORKLOAD_D;
-    } else if (strcmp(argv[2], "e") == 0) {
-        wl = WORKLOAD_E;
-    } else {
-        fprintf(stderr, "Unknown workload: %s\n", argv[2]);
-        exit(1);
+    int num_thread = atoi(argv[2]);
+
+    if(argc > 3) {
+        LOAD_SIZE = atoi(argv[3]);
     }
 
-    int kt;
-    if (strcmp(argv[3], "randint") == 0) {
-        kt = RANDINT_KEY;
-    } else if (strcmp(argv[3], "string") == 0) {
-        kt = STRING_KEY;
-    } else {
-        fprintf(stderr, "Unknown key type: %s\n", argv[3]);
-        exit(1);
+    if(argc > 4) {
+        RUN_SIZE = atoi(argv[4]);
     }
+    printf("Load size: %d, Run size %d\n", LOAD_SIZE, RUN_SIZE);
 
-    int ap;
-    if (strcmp(argv[4], "uniform") == 0) {
-        ap = UNIFORM;
-    } else if (strcmp(argv[4], "zipfian") == 0) {
-        ap = ZIPFIAN;
-        fprintf(stderr, "Not supported access pattern: %s\n", argv[4]);
-        exit(1);
-    } else {
-        fprintf(stderr, "Unknown access pattern: %s\n", argv[4]);
-        exit(1);
-    }
-
-    int num_thread = atoi(argv[5]);
     tbb::task_scheduler_init init(num_thread);
-
-    if (kt != STRING_KEY) {
-        std::vector<uint64_t> init_keys;
-        std::vector<uint64_t> keys;
-        std::vector<int> ranges;
-        std::vector<int> ops;
-
-        init_keys.reserve(LOAD_SIZE);
-        keys.reserve(RUN_SIZE);
-        ranges.reserve(RUN_SIZE);
-        ops.reserve(RUN_SIZE);
-
-        memset(&init_keys[0], 0x00, LOAD_SIZE * sizeof(uint64_t));
-        memset(&keys[0], 0x00, RUN_SIZE * sizeof(uint64_t));
-        memset(&ranges[0], 0x00, RUN_SIZE * sizeof(int));
-        memset(&ops[0], 0x00, RUN_SIZE * sizeof(int));
-
-        motivation_run_randint(index_type, wl, kt, ap, num_thread, init_keys, keys, ranges, ops);
-    } else {
-        printf("No impl for string in motivation\n");
-    }
+    
+    motivation_run_randint(index_type, wl, kt, ap, num_thread, init_keys, keys, ranges, ops);
+    
 
     return 0;
 }
