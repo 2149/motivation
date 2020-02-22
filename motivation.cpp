@@ -1338,7 +1338,7 @@ void motivation_run_randint(int index_type, int num_thread)
                     uint64_t key_64 = rnd_get[thread_id]->Next();
                     auto val = table->Get(key_64);
                     if (val == NONE || ((uint64_t)val) != key_64) {
-                        std::cout << "[Level Hashing] wrong key read: " << *(uint64_t *)val << " expected: " << keys[i] << std::endl;
+                        std::cout << "[Level Hashing] wrong key read: " << *(uint64_t *)val << " expected: " << key_64 << std::endl;
                         exit(1);
                     }
                 }
