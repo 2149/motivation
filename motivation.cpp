@@ -227,8 +227,9 @@ void barrier_cross(barrier_t *b) {
 barrier_t barrier;
 /////////////////////////////////////////////////////////////////////////////////
 
-static uint64_t LOAD_SIZE = 400000000;
-static uint64_t RUN_SIZE = 10000000;
+static uint64_t LOAD_SIZE = 4000000;
+static uint64_t RUN_SIZE = 100000;
+static int scan_times = 1000;
 
 void loadKey(TID tid, Key &key) {
     return ;
@@ -378,7 +379,7 @@ void motivation_run_randint(int index_type, int num_thread)
             // Scan
             Key *end = end->make_leaf(UINT64_MAX, sizeof(uint64_t), 0);
             int count = 4;
-            int scan_times = 100;
+            
             int scan_count = 100;
             while(count >0 ) {
             next_thread_id.store(0);
@@ -469,8 +470,6 @@ void motivation_run_randint(int index_type, int num_thread)
                     stats.add_put();
                     if ((i % 10000) == 0) {
                         stats.PrintLatency(i);
-                        hot::commons::print_stats(10000);
-
                     }
                 }
             };
@@ -554,7 +553,7 @@ void motivation_run_randint(int index_type, int num_thread)
         {
             // Scan
             int count = 4;
-            int scan_times = 100;
+            
             int scan_count = 100;
             
             while(count > 0) {
@@ -725,7 +724,7 @@ void motivation_run_randint(int index_type, int num_thread)
         {
             // Scan
             int count = 4;
-            int scan_times = 100;
+            
             int scan_count = 100;
             while(count >0 ) {
             next_thread_id.store(0);
@@ -894,9 +893,8 @@ void motivation_run_randint(int index_type, int num_thread)
 
         {
             // Scan
-            Key *end = end->make_leaf(UINT64_MAX, sizeof(uint64_t), 0);
             int count = 4;
-            int scan_times = 100;
+            
             int scan_count = 100;
             while(count >0 ) {
             next_thread_id.store(0);
@@ -984,7 +982,7 @@ void motivation_run_randint(int index_type, int num_thread)
                     stats.add_put();
                     if ((i % 10000) == 0) {
                         stats.PrintLatency(i);
-                        // clht_print_stats(10000);
+                        clht_print_stats(10000);
                     }
                 }
             };
@@ -1209,7 +1207,7 @@ void motivation_run_randint(int index_type, int num_thread)
             // Scan
             Key *end = end->make_leaf(UINT64_MAX, sizeof(uint64_t), 0);
             int count = 4;
-            int scan_times = 100;
+            
             int scan_count = 100;
             while(count >0 ) {
             next_thread_id.store(0);
